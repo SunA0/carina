@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-19
+
+### Fixed
+
+- **打包**: 将 `.qoder/` 从 git 索引中移除。该目录为 AI 助手生成的知识库镜像，
+  路径含全角标点（`：`、`（`、`、`）与大写字母，会触发 Go module zip 的
+  路径校验失败（`malformed file path` / `invalid name case`），导致下游项目
+  `go mod tidy` / `go mod download` 直接报错。
+- **工程**: 新增 `.gitattributes`，对 `.qoder/**`、`.idea/**`、`.vscode/**`、
+  `.github/**` 配置 `export-ignore`，作为 archive 层面的双保险。
+
 ## [0.1.0] - 2026-09-18
 
 初始版本。自 beego vanilla 移植全部微服务能力到 Gin + GORM。

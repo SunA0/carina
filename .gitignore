@@ -28,3 +28,7 @@ go.work.sum
 # Coverage
 coverage.out
 coverage.html
+
+# AI 助手 / IDE 生成的 wiki（不进 Go module zip，中文标点与大写字母
+# 会破坏 module zip 路径校验）
+.qoder/

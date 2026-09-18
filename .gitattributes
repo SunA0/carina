@@ -1,0 +1,16 @@
+# 通过 git archive / GitHub web /archive/*.zip 端点导出仓库时，
+# 排除以下路径，避免下游 go mod download 时触发 module zip 路径校验错误
+# （中文全角标点、大写字母等）。
+#
+# 注：.gitignore 已经能阻止新提交，这里的 export-ignore 是双保险——
+# 防止历史遗留或误提交文件仍出现在 archive 里。
+
+.qoder/**           export-ignore
+.idea/**            export-ignore
+.vscode/**          export-ignore
+.github/**          export-ignore
+
+# 文档类目录仍然导出（对人类读者有用），只是不影响 Go 构建
+docs/**             text eol=lf
+*.md                text eol=lf
+*.go                text eol=lf
