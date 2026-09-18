@@ -1,0 +1,48 @@
+name: Compat
+
+# 兼容性 CI：框架发版前，自动对所有下游项目跑编译检查。
+# 当下游项目就绪后，在 matrix.project 中登记仓库名即可启用。
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compat:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # TODO: 下游项目就绪后登记，例如:
+        # - { repo: suna0/my-service-a, ref: main }
+        project: []
+    if: ${{ false }} # 无下游项目时整体跳过；登记项目后删除本行
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: carina
+
+      - name: Checkout downstream
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.project.repo }}
+          ref: ${{ matrix.project.ref }}
+          path: downstream
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: true
+
+      - name: Replace carina with PR branch
+        working-directory: downstream
+        run: |
+          go mod edit -replace github.com/suna0/carina=../carina
+          go mod tidy
+
+      - name: Build downstream
+        working-directory: downstream
+        run: go build ./...
+
+      - name: Test downstream
+        working-directory: downstream
+        run: go test ./...

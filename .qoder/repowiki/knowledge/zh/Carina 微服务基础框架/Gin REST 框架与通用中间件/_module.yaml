@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: vanilla_framework
+title: Gin REST 框架与通用中间件
+scope:
+    - vanilla/
+    - middleware/
+source_files: []
+depends_on: []
+related_to:
+    - path: concurrency_primitives
+    - path: identity_id
+    - path: observability

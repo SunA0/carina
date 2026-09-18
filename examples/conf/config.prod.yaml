@@ -1,0 +1,14 @@
+# 环境覆盖文件（可选）：GO_ENV=prod 时合并覆盖 config.yaml 的同名字段
+
+server:
+  mode: release
+  port: 9090
+
+tracing:
+  enabled: true
+  sample_rate: 0.1
+
+lock:
+  engine: redis
+
+greeting: "hello from PROD override"

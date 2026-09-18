@@ -1,0 +1,11 @@
+schema_version: 1
+module_path: data_layer
+title: 数据访问层（数据库、Redis 缓存与内存 LRU）
+scope:
+    - db/
+    - cache/
+    - lru/
+source_files: []
+depends_on: []
+related_to:
+    - path: observability

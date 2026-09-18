@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: concurrency_primitives
+title: 并发原语：重试退避、分布式锁与定时任务框架
+scope:
+    - backoff/
+    - lock/
+    - cron/
+source_files: []
+depends_on: []
+related_to:
+    - path: observability
+    - path: vanilla_framework
