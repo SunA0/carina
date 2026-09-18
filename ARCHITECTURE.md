@@ -20,7 +20,7 @@ carina/
 ├── cache/        go-redis 封装：常用操作 + 前缀清理
 ├── lock/         分布式锁：ILock 接口 + RedisLock(redsync) + DummyLock
 ├── auth/         JWT 编解码（Claims: userId/authUserId/tokenType）
-├── config/       viper 加载器 + Base 通用配置基座
+├── config/       env-only 加载器（godotenv + viper BindEnv）+ Base 通用配置基座
 ├── cron/         robfig/cron 封装：事务、Recovery、重试策略
 ├── client/       服务间调用：JWT 透传 + 重试 + tracing
 ├── ws/           WebSocket REST Proxy：WS 通道派发内部 REST 请求

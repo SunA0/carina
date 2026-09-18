@@ -42,8 +42,10 @@ import (
 
 func main() {
     // 1. 加载配置（项目本地 config 内嵌 config.Base）
+    //    优先级：进程环境变量 > .env.<GO_ENV> 文件
+    config.LoadEnvFile("")
     cfg := &AppConfig{}
-    config.Load("./conf", cfg)
+    config.Load(cfg)
 
     // 2. 初始化基础设施
     db.Init(mysql.Open(cfg.DB.DSN), &db.Options{

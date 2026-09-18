@@ -8,9 +8,8 @@
 ```
 examples/
 ├── main.go            # 启动入口（完整流程）
-├── conf/
-│   ├── config.yaml        # 基础配置（必需）
-│   └── config.prod.yaml   # GO_ENV=prod 时的覆盖配置（可选）
+├── .env.development   # GO_ENV=dev 时加载的配置（env-only，无 yaml）
+├── .env.production    # GO_ENV=prod 时加载的配置
 ├── config/
 │   └── config.go      # 项目配置：内嵌 carina config.Base + 业务字段
 └── rest/
@@ -23,7 +22,7 @@ examples/
 ```bash
 cd examples
 go mod tidy
-go run .
+GO_ENV=dev go run .
 ```
 
 无需 DB / Redis 即可启动（相关初始化自动跳过）。
@@ -58,13 +57,19 @@ curl "http://127.0.0.1:8080/healthz"
 
 ## 环境变量与多环境
 
+配置来源：进程环境变量 > .env.<GO_ENV> 文件（dev/development → .env.development，
+prod/production → .env.production，其他值 → .env.<GO_ENV>，无 GO_ENV 时回退 .env）。
+
+环境变量名 = 配置路径大写且 `.` 换 `_`，如 `server.cors_origins` → `SERVER_CORS_ORIGINS`
+（列表用逗号分隔）。
+
 ```bash
-# 敏感字段注入（不写入配置文件）
+# 敏感字段注入（不写入 env 文件，进程环境变量优先级最高）
 export DB_DSN="user:pass@tcp(127.0.0.1:3306)/demo?charset=utf8mb4&parseTime=True&loc=Local"
 export REDIS_ADDRESS="127.0.0.1:6379"
 export AUTH_JWT_SECRET="your-secret"
 
-# 多环境：合并 conf/config.prod.yaml（端口变 9090、release 模式）
+# 多环境：加载 .env.production（端口变 9090、release 模式）
 GO_ENV=prod go run .
 ```
 
@@ -79,5 +84,5 @@ GO_ENV=prod go run .
 
 1. 拷贝本目录为新项目
 2. 删除 go.mod 中的 `replace github.com/suna0/carina => ../`
-3. `go get github.com/suna0/carina@v0.1.0 && go mod tidy`
+3. `go get github.com/suna0/carina@v0.2.0 && go mod tidy`
 4. 全局替换 module 名 `example` 为你的服务名

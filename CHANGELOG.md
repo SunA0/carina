@@ -12,6 +12,19 @@
   module-zip 污染回归。不影响 module zip 内容（`.github/**` 已 `export-ignore`），
   因此不需升版。
 
+## [0.2.0] - 2026-09-19
+
+### Changed（破坏性）
+
+- **config**: 配置加载改为 env-only，删除 yaml（config.yaml / config.<GO_ENV>.yaml）体系
+  - `Load(dir, out)` 废除，拆为 `LoadEnvFile(explicit)`（godotenv 按 GO_ENV 加载
+    `.env.development` / `.env.production`，不覆盖已存在的进程环境变量）
+    与 `Load(out)`（反射遍历结构体逐 key BindEnv，env 名 = 大写路径如
+    `SERVER_CORS_ORIGINS`，`[]string` 支持逗号分隔）
+  - 优先级：进程环境变量 > .env.<GO_ENV> 文件
+  - examples 同步：删除 `examples/conf/`，新增 `.env.development` / `.env.production`
+- **config**: 新增直接依赖 `github.com/joho/godotenv`
+
 ## [0.1.1] - 2026-09-19
 
 ### Fixed

@@ -2,9 +2,10 @@
 //
 // 运行：
 //
-//	cd examples && go run .
-//	GO_ENV=prod go run .          # 加载 config.prod.yaml 覆盖
+//	cd examples && GO_ENV=dev go run .     # 加载 .env.development
+//	GO_ENV=prod go run .                   # 加载 .env.production
 //
+// 配置来源：进程环境变量 > .env.<GO_ENV> 文件（env-only，不再读取 yaml）。
 // 无 DB/Redis 环境也能跑：DSN / Redis 地址为空时自动跳过对应初始化。
 package main
 
@@ -30,9 +31,14 @@ import (
 )
 
 func main() {
-	// 1. 加载配置：环境变量 > config.<GO_ENV>.yaml > config.yaml
+	// 1. 加载配置：进程环境变量 > .env.<GO_ENV> 文件
+	if file, err := carinaconfig.LoadEnvFile(""); err != nil {
+		log.Printf("[example] %v, continue with process env vars only", err)
+	} else {
+		log.Printf("[example] loaded env file %s", file)
+	}
 	cfg := &config.Config{}
-	if err := carinaconfig.Load("./conf", cfg); err != nil {
+	if err := carinaconfig.Load(cfg); err != nil {
 		log.Fatalf("load config: %v", err)
 	}
 	log.Printf("[example] app=%s greeting=%s env_mode=%s",

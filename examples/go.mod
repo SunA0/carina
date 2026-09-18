@@ -38,6 +38,7 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
@@ -88,5 +89,5 @@ require (
 )
 
 // 本地开发：指向框架仓根目录。
-// 下游真实项目删除本行，改为 go get github.com/suna0/carina@v0.1.0
+// 下游真实项目删除本行，改为 go get github.com/suna0/carina@v0.2.0
 replace github.com/suna0/carina => ../
