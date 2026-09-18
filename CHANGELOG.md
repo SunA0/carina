@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+### Added
+
+- **CI**: `ci.yml` 新增回归守卫 step —— 拒绝 `.qoder/`、`.idea/`、`.vscode/`
+  下的任何文件进入索引；对非 ASCII 跟踪路径发 `::warning::`。CI 层面防止 v0.1.1 类型的
+  module-zip 污染回归。不影响 module zip 内容（`.github/**` 已 `export-ignore`），
+  因此不需升版。
+
 ## [0.1.1] - 2026-09-19
 
 ### Fixed

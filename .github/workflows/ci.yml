@@ -16,6 +16,31 @@ jobs:
           go-version: "1.21"
           cache: true
 
+      - name: Guard - no IDE / AI-wiki artifacts tracked
+        # Regression guard: previously .qoder/ (Qoder AI wiki mirror) was
+        # committed; its paths contain fullwidth CJK punctuation and uppercase
+        # letters, which break Go module zip validation (CheckFilePath) and
+        # cause downstream `go mod tidy` / `go mod download` to fail hard.
+        # Keep these directories out of the git index permanently.
+        run: |
+          set -euo pipefail
+          offenders=$(git ls-files | grep -E '^(\.qoder/|\.idea/|\.vscode/)' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::Found tracked files under forbidden paths (.qoder/, .idea/, .vscode/)."
+            echo "These must NOT be shipped inside the Go module zip."
+            echo "Fix: git rm -r --cached <path>  and add it to .gitignore."
+            printf '%s\n' "$offenders"
+            exit 1
+          fi
+          # Sanity: warn if any tracked path contains non-ASCII bytes at all,
+          # because Go's modfetch writer will reject those zips on some proxies.
+          nonascii=$(git ls-files | grep -P '[^\x00-\x7F]' || true)
+          if [ -n "$nonascii" ]; then
+            echo "::warning::Tracked paths contain non-ASCII characters; verify they are intentional."
+            printf '%s\n' "$nonascii"
+          fi
+          echo "Guard passed: no forbidden artifacts tracked."
+
       - name: Build
         run: go build ./...
 
