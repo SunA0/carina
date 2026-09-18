@@ -2,7 +2,7 @@
 //
 // 运行：
 //
-//	cd examples && GO_ENV=dev go run .     # 加载 .env.development
+//	cd examples && go run .                # GO_ENV 未设置，默认加载 .env.development
 //	GO_ENV=prod go run .                   # 加载 .env.production
 //
 // 配置来源：进程环境变量 > .env.<GO_ENV> 文件（env-only，不再读取 yaml）。

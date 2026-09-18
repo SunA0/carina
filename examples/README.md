@@ -22,7 +22,7 @@ examples/
 ```bash
 cd examples
 go mod tidy
-GO_ENV=dev go run .
+go run .          # GO_ENV 未设置，默认加载 .env.development
 ```
 
 无需 DB / Redis 即可启动（相关初始化自动跳过）。
@@ -58,7 +58,9 @@ curl "http://127.0.0.1:8080/healthz"
 ## 环境变量与多环境
 
 配置来源：进程环境变量 > .env.<GO_ENV> 文件（dev/development → .env.development，
-prod/production → .env.production，其他值 → .env.<GO_ENV>，无 GO_ENV 时回退 .env）。
+prod/production → .env.production，其他值 → .env.<GO_ENV>；GO_ENV 未设置时
+默认按 development 处理）。候选文件从当前目录逐级向上查找，在 cmd/ 等
+子目录内启动也能命中项目根目录的 env 文件。
 
 环境变量名 = 配置路径大写且 `.` 换 `_`，如 `server.cors_origins` → `SERVER_CORS_ORIGINS`
 （列表用逗号分隔）。

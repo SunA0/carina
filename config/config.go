@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -18,38 +19,69 @@ var ErrEnvFileNotFound = errors.New("env file not found")
 
 // LoadEnvFile 按约定加载 dotenv 文件到进程环境变量。
 //
-// 文件选择顺序：
-//  1. explicit 非空 → 直接加载该文件
+// 文件选择顺序（每一级候选都从当前目录开始逐级向上查找，
+// 支持在 cmd/ 等子目录内启动时命中项目根目录的 env 文件）：
+//  1. explicit 非空 → 仅使用该文件名
 //  2. GO_ENV=dev|development → .env.development；prod|production → .env.production；
 //     其他值 → .env.<GO_ENV 小写>
-//  3. 回退 .env
+//  3. GO_ENV 未设置 → 默认按 development 处理（候选 .env.development）
+//  4. 同目录内最后回退 .env
 //
 // 已存在的进程环境变量优先于文件值（godotenv.Load 语义），
 // 保证容器注入配置不被文件覆盖。
 //
-// 返回实际加载的文件名；全部候选缺失时返回包装了
+// 返回实际加载的文件路径；全部候选缺失时返回包装了
 // ErrEnvFileNotFound 的错误（调用方可用 errors.Is 判断后降级处理）。
 func LoadEnvFile(explicit string) (string, error) {
 	var candidates []string
 	if explicit != "" {
 		candidates = append(candidates, explicit)
 	} else {
+		// GO_ENV 未设置时默认 development（类 Rails：本地开发零配置可跑）
+		suffix := "development"
 		if env := os.Getenv("GO_ENV"); env != "" {
-			candidates = append(candidates, ".env."+normalizeEnv(env))
+			suffix = normalizeEnv(env)
 		}
-		candidates = append(candidates, ".env")
+		candidates = append(candidates, ".env."+suffix, ".env")
 	}
 
-	for _, file := range candidates {
-		if _, err := os.Stat(file); err != nil {
-			continue
+	for _, dir := range lookupDirs() {
+		for _, name := range candidates {
+			file := filepath.Join(dir, name)
+			if _, err := os.Stat(file); err != nil {
+				continue
+			}
+			if err := godotenv.Load(file); err != nil {
+				return "", fmt.Errorf("config: load env file %s: %w", file, err)
+			}
+			return file, nil
 		}
-		if err := godotenv.Load(file); err != nil {
-			return "", fmt.Errorf("config: load env file %s: %w", file, err)
-		}
-		return file, nil
 	}
-	return "", fmt.Errorf("config: %w: tried %s", ErrEnvFileNotFound, strings.Join(candidates, ", "))
+	return "", fmt.Errorf("config: %w: tried %s in %s and parents",
+		ErrEnvFileNotFound, strings.Join(candidates, ", "), currentDir())
+}
+
+// currentDir 返回当前工作目录，失败时返回 "."（仅用于错误信息）。
+func currentDir() string {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "."
+	}
+	return wd
+}
+
+// lookupDirs 生成从当前目录逐级向上至文件系统根的查找链。
+func lookupDirs() []string {
+	dir := currentDir()
+	dirs := []string{dir}
+	for {
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return dirs
+		}
+		dirs = append(dirs, parent)
+		dir = parent
+	}
 }
 
 // normalizeEnv 将 GO_ENV 简写归一化为 env 文件名后缀。

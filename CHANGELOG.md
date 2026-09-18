@@ -5,6 +5,17 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-19
+
+### Changed
+
+- **config**: `LoadEnvFile` 启动体验增强（非破坏性）
+  - GO_ENV 未设置时默认按 development 处理，候选 `.env.development` → `.env`
+    （本地开发零配置可跑；生产容器有进程 env 注入不受影响）
+  - 候选文件从当前工作目录逐级向上查找至文件系统根，
+    支持在 `cmd/` 等子目录内启动时命中项目根目录的 env 文件
+  - 未命中时错误信息列出候选与起始目录
+
 ### Added
 
 - **CI**: `ci.yml` 新增回归守卫 step —— 拒绝 `.qoder/`、`.idea/`、`.vscode/`
