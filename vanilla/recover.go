@@ -20,8 +20,12 @@ func RecoverPanic() gin.HandlerFunc {
 		defer func() {
 			if err := recover(); err != nil {
 				// 回滚事务
+				managedTx, managed := c.Get(managedTransactionKey)
 				if c.Request != nil && c.Request.Context() != nil {
-					_ = db.RollbackTx(c.Request.Context())
+					ctx := c.Request.Context()
+					if !managed || db.TxFromContext(ctx) != managedTx {
+						_ = db.RollbackTx(ctx)
+					}
 				}
 
 				// 记录 metrics
@@ -43,6 +47,11 @@ func RecoverPanic() gin.HandlerFunc {
 
 				// 日志
 				logPanic(c, err)
+
+				if c.Writer.Written() {
+					c.Abort()
+					return
+				}
 
 				// 返回错误响应
 				if be, ok := err.(*BusinessError); ok {

@@ -120,6 +120,47 @@ func (r *Corp) Get() {
 - 非 GET 请求自动包裹事务
 - `GetLockKey()` 非空时自动加分布式锁
 
+## 事务提交后输出响应
+
+新增能力通过 `HandlerOptions` 显式启用，适用于普通、非流式的 REST 响应：
+
+```go
+vanilla.RouterWithOptions(engine, &account.Corp{}, vanilla.HandlerOptions{
+    BufferResponseUntilCommit: true,
+    MaxResponseBytes:          1 << 20, // 可选；默认正文上限为 1 MiB
+})
+```
+
+自行挂载 handler 时使用 `vanilla.CreateHandlerWithOptions(resource, opts)`。
+资源中的 `ReturnJSON()`、`ReturnJSONWithCallback()` 和直接 `Ctx.JSON()` 调用无需修改。
+标准路由、API 路由和别名使用相同选项。
+
+启用后，开启自动事务的请求先将状态码、响应头和已序列化正文暂存在当前请求中，
+提交成功后才输出。提交失败时丢弃暂存内容，只返回一份
+`code=500, errCode=rest:tx_commit_failed` 响应，HTTP 状态仍为 200。
+提交前 panic 会回滚并由 Recovery 输出错误；渲染失败、缓冲超限或 handler 执行期间
+新增的 `c.Error()` 会回滚并返回 `rest:response_failed`。
+`ReturnError()` 和响应体中的业务码本身不会自动触发回滚。
+
+响应在提交成功时冻结。随后按顺序执行 `AfterCommitCallback` 和 `Finish()`，最后输出响应；
+这两个钩子中的 panic 会记录到日志和 Gin 错误列表，不回滚已提交事务，也不替换已确定的响应。
+提交后钩子不能再写响应或修改其响应头，需要影响响应或事务成败的工作应在提交前完成。
+网络写入失败仅记录错误，不会再追加一份 JSON。提交失败不代表能确认数据库一定未提交，
+框架也不会自动重试请求或提交后回调。
+
+该选项不设置事务、Commit 或提交后钩子的超时时间。请求已有的 Context deadline 会传递
+给事务，但正在进行的 Commit 能否及时中断仍取决于驱动及网络超时配置；
+提交后钩子阻塞也会延迟响应。下游应结合实际驱动和数据库设置等待上限。
+
+缓冲超限不会降级为提前输出。启用自动事务缓冲时不支持 `Flush()` / SSE / `Hijack()`，
+这类资源应通过 `DisableTx()` 关闭自动事务，并自行限定数据库事务范围。
+上游中间件已经写出响应时，handler 会终止请求而不执行事务业务。
+该选项不缓冲进入 handler 之前或 handler 返回之后的中间件写入。
+
+**旧入口 `Router()`、`CreateHandler()` 和零值 Options 保持即时输出行为；仅升级依赖不会启用修复。**
+`DisableTx()` 返回 true 的请求也保持即时输出。该能力按 minor 版本发布，
+未修改 `RestResourceInterface` 等关键接口。
+
 ## Filter 查询协议
 
 ```

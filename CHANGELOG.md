@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-11
+
+### Added
+
+- **vanilla**: 新增 `HandlerOptions`、`RouterWithOptions` 和
+  `CreateHandlerWithOptions`。显式开启 `BufferResponseUntilCommit` 后，自动事务请求暂存
+  普通响应，提交成功后才输出；提交失败丢弃暂存内容，只输出提交错误并跳过提交后钩子。
+  默认缓冲正文上限 1 MiB，可通过 `MaxResponseBytes` 调整。渲染错误、超限和请求新增
+  Gin 错误触发回滚；Flush/Hijack 不允许绕过缓冲。提交后钩子异常记录后保留冻结响应。
+  此为兼容性新增能力，按 minor 发布；旧入口和零值选项保持原响应时序，关键接口不变。
+
+### Fixed
+
+- **vanilla**: handler 开启事务后立即安装回滚保护，覆盖 InitContext、PrepareOrm 和
+  Prepare 等钩子，Recovery 不再重复回滚 handler 管理的事务；已写出的响应不再追加
+  panic 错误 JSON。缺少 REST 方法时在开启事务前返回 405，避免事务泄漏。
+- **vanilla**: 更新事务上下文时保留已解析的 JSON、数组、原始 JSON 和 Filter 参数，
+  避免二次 InitContext 清空请求参数。
+
 ## [0.2.1] - 2026-09-19
 
 ### Changed

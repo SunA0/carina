@@ -20,6 +20,12 @@ var enableDevTestResource = os.Getenv("ENABLE_DEV_TEST_RESOURCE") == "1"
 //   - API URL:   /account/api/corp/
 //   - 别名 URL:  通过 GetAlias() 自定义
 func Router(engine *gin.Engine, r RestResourceInterface) {
+	RouterWithOptions(engine, r, HandlerOptions{})
+}
+
+// RouterWithOptions 注册资源的全部约定路由，并为其配置 handler 选项。
+// 标准路径、API 路径和别名使用同一组选项。
+func RouterWithOptions(engine *gin.Engine, r RestResourceInterface, opts HandlerOptions) {
 	if r.IsForDevTest() && !enableDevTestResource {
 		return
 	}
@@ -28,7 +34,7 @@ func Router(engine *gin.Engine, r RestResourceInterface) {
 	RESOURCES = append(RESOURCES, resource)
 	items := strings.Split(resource, ".")
 
-	handler := CreateHandler(r)
+	handler := CreateHandlerWithOptions(r, opts)
 
 	// 标准 URL: /account/corp/
 	standardPath := "/" + strings.Join(items, "/") + "/"

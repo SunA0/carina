@@ -60,7 +60,8 @@ Request
   │    ├─ parseParameters     按 GetParameters() 声明校验
   │    ├─ 分布式锁            GetLockKey() 非空时获取
   │    ├─ 事务                DisableTx()=false 时 Begin
-  │    │    └─ defer recover → Rollback
+  │    │    ├─ defer 保护未结束事务 → Rollback
+  │    │    └─ 可选响应缓冲     HandlerOptions.BufferResponseUntilCommit
   │    ├─ Prepare()
   │    ├─ 反射派发 Get/Post/Put/Delete
   │    ├─ BeforeCommitCallback
@@ -70,6 +71,12 @@ Request
   │
   └─ Response 返回
 ```
+
+`RouterWithOptions` / `CreateHandlerWithOptions` 可显式开启事务响应缓冲。
+缓冲仅属于当前请求，覆盖普通 writer 写入；提交失败或提交前 panic 丢弃缓冲，
+提交成功后冻结响应、隔离提交后钩子异常并输出。旧入口和零值 Options 保持即时写入行为。
+渲染错误、正文超限和请求新增的 Gin 错误阻止提交；流式输出及连接劫持不可绕过缓冲。
+详情和启用示例见 README「事务提交后输出响应」。
 
 ## 事务传播
 

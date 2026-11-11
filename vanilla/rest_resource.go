@@ -269,12 +269,14 @@ func (r *RestResource) GetFilters() map[string]interface{} {
 
 // --- 响应方法 ---
 
-// ReturnJSON 返回统一 JSON 响应
+// ReturnJSON 返回统一 JSON 响应。
+// 启用 HandlerOptions.BufferResponseUntilCommit 时，自动事务提交成功后才实际输出。
 func (r *RestResource) ReturnJSON(response *Response) {
 	r.Ctx.JSON(http.StatusOK, response)
 }
 
-// ReturnJSONWithCallback 返回 JSON 并设置事务提交后回调
+// ReturnJSONWithCallback 返回 JSON 并设置事务提交后回调。
+// 响应是否延迟输出由 HandlerOptions.BufferResponseUntilCommit 决定。
 func (r *RestResource) ReturnJSONWithCallback(response *Response, callback AfterCommitCallbackFunc) {
 	r.AfterCommitCallback = callback
 	r.Ctx.JSON(http.StatusOK, response)

@@ -35,22 +35,47 @@ func (d *mockDriver) Open(string) (driver.Conn, error) { return &mockConn{d}, ni
 type mockConnector struct{ d *mockDriver }
 
 func (c *mockConnector) Connect(context.Context) (driver.Conn, error) { return &mockConn{c.d}, nil }
-func (c *mockConnector) Driver() driver.Driver                     { return c.d }
-func (c *mockConnector) Close() error                              { return nil }
+func (c *mockConnector) Driver() driver.Driver                        { return c.d }
+func (c *mockConnector) Close() error                                 { return nil }
 
 type mockConn struct{ d *mockDriver }
+
+type mockTxOptionsKey struct{}
+
+// mockTxOptions 按请求注入故障，避免修改全局 mock 的故障开关。
+type mockTxOptions struct {
+	beginErr  error
+	commitErr error
+	onCommit  func()
+}
 
 func (c *mockConn) Prepare(string) (driver.Stmt, error) { return &mockStmt{}, nil }
 func (c *mockConn) Close() error                        { return nil }
 func (c *mockConn) Begin() (driver.Tx, error) {
+	return c.BeginTx(context.Background(), driver.TxOptions{})
+}
+func (c *mockConn) BeginTx(ctx context.Context, _ driver.TxOptions) (driver.Tx, error) {
+	opts, _ := ctx.Value(mockTxOptionsKey{}).(*mockTxOptions)
+	if opts != nil && opts.beginErr != nil {
+		return nil, opts.beginErr
+	}
 	atomic.AddInt64(&c.d.stats.begins, 1)
-	return &mockTx{d: c.d}, nil
+	return &mockTx{d: c.d, opts: opts}, nil
 }
 
-type mockTx struct{ d *mockDriver }
+type mockTx struct {
+	d    *mockDriver
+	opts *mockTxOptions
+}
 
 func (t *mockTx) Commit() error {
 	atomic.AddInt64(&t.d.stats.commits, 1)
+	if t.opts != nil {
+		if t.opts.onCommit != nil {
+			t.opts.onCommit()
+		}
+		return t.opts.commitErr
+	}
 	return nil
 }
 func (t *mockTx) Rollback() error {
@@ -88,8 +113,8 @@ func (m mockDialector) Initialize(gdb *gorm.DB) error {
 	gdb.ConnPool = sql.OpenDB(&mockConnector{d: &mockDriver{stats: m.stats}})
 	return nil
 }
-func (mockDialector) Migrator(gdb *gorm.DB) gorm.Migrator  { return nil }
-func (mockDialector) DataTypeOf(*schema.Field) string      { return "" }
+func (mockDialector) Migrator(gdb *gorm.DB) gorm.Migrator { return nil }
+func (mockDialector) DataTypeOf(*schema.Field) string     { return "" }
 func (mockDialector) DefaultValueOf(*schema.Field) clause.Expression {
 	return clause.Expr{SQL: "DEFAULT"}
 }
@@ -126,8 +151,8 @@ type txProfileResource struct {
 	RestResource
 }
 
-func (r *txProfileResource) Resource() string  { return "tx.profile" }
-func (r *txProfileResource) DisableTx() bool   { return false } // 所有方法走事务
+func (r *txProfileResource) Resource() string   { return "tx.profile" }
+func (r *txProfileResource) DisableTx() bool    { return false } // 所有方法走事务
 func (r *txProfileResource) GetLockKey() string { return "" }
 func (r *txProfileResource) GetParameters() map[string][]string {
 	return map[string][]string{
